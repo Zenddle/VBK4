@@ -1,8 +1,11 @@
 @extends('layouts.student')
-@section('title', 'Borrowed Books')
+@section('title', 'Buku Dipinjam')
 
 @section('body')
-<h4 class="mb-3">Borrowed Books</h4>
-<p class="text-muted small">Loan duration is 7 days from approval. Max 3 active loans.</p>
+<div class="page-head">
+    <h1 class="page-title">Buku Dipinjam</h1>
+    <p class="page-sub">Durasi pinjaman 7 hari sejak disetujui. Maksimal 3 pinjaman aktif.</p>
+</div>
+
 @include('partials.loan-table', ['loans' => $loans])
 @endsection

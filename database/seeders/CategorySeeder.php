@@ -8,7 +8,7 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        foreach (['Fiction', 'Science', 'Technology', 'History', 'Business'] as $name) {
+        foreach (['Fiksi'] as $name) {
             Category::firstOrCreate(['name' => $name]);
         }
     }

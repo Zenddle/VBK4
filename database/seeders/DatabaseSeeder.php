@@ -13,15 +13,13 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([AdminSeeder::class, CategorySeeder::class]);
 
-        foreach ([['2024001', 'Alice'], ['2024002', 'Bob'], ['2024003', 'Citra']] as [$nim, $name]) {
-            User::updateOrCreate(['nim' => $nim], ['name' => $name, 'password' => 'password123', 'role' => 'student']);
+        foreach ([['2441919029', 'zikry']] as [$nim, $name]) {
+            User::updateOrCreate(['nim' => $nim], ['name' => $name, 'password' => 'password', 'role' => 'student']);
         }
 
         $demo = [
-            ['Fiction', 'The Silent Garden', 2015], ['Fiction', 'Night Train', 2019],
-            ['Science', 'Cosmos Explained', 2012], ['Technology', 'Clean Code Basics', 2018],
-            ['Technology', 'Learning Laravel', 2023], ['History', 'Ancient Empires', 2008],
-            ['Business', 'Startup Playbook', 2020],
+            ['Fiksi', 'a Day In My Life', 2026],
+
         ];
         foreach ($demo as [$cat, $title, $year]) {
             Book::firstOrCreate(['title' => $title], [

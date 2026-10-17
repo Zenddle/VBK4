@@ -1,36 +1,70 @@
 @extends('layouts.admin')
-@section('title', 'Loan History')
+@section('title', 'Riwayat Pinjaman')
 
 @section('body')
-<h4 class="mb-3">Loan History</h4>
-<form method="GET" class="row g-2 mb-3">
-  <div class="col-md-2"><select name="user_id" class="form-select form-select-sm"><option value="">All users</option>
-    @foreach ($users as $u)<option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>{{ $u->nim }} {{ $u->name }}</option>@endforeach</select></div>
-  <div class="col-md-2"><select name="book_id" class="form-select form-select-sm"><option value="">All books</option>
-    @foreach ($books as $b)<option value="{{ $b->id }}" @selected(request('book_id') == $b->id)>{{ $b->title }}</option>@endforeach</select></div>
-  <div class="col-md-2"><select name="status" class="form-select form-select-sm"><option value="">All status</option>
-    @foreach (['pending','approved','overdue','declined','returned'] as $s)<option value="{{ $s }}" @selected(request('status') === $s)>{{ $s }}</option>@endforeach</select></div>
-  <div class="col-md-2"><input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm"></div>
-  <div class="col-md-2"><input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm"></div>
-  <div class="col-md-2"><button class="btn btn-sm btn-secondary w-100">Filter</button></div>
+<div class="page-head">
+    <h1 class="page-title">Riwayat Pinjaman</h1>
+    <p class="page-sub">Filter dan lihat seluruh riwayat peminjaman</p>
+</div>
+
+<form method="GET" class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+    <select name="user_id" aria-label="Pengguna" class="field px-3 py-2">
+        <option value="">Semua pengguna</option>
+        @foreach ($users as $u)
+            <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>{{ $u->nim }} {{ $u->name }}</option>
+        @endforeach
+    </select>
+    <select name="book_id" aria-label="Buku" class="field px-3 py-2">
+        <option value="">Semua buku</option>
+        @foreach ($books as $b)
+            <option value="{{ $b->id }}" @selected(request('book_id') == $b->id)>{{ $b->title }}</option>
+        @endforeach
+    </select>
+    <select name="status" aria-label="Status" class="field px-3 py-2">
+        <option value="">Semua status</option>
+        @foreach (['pending' => 'Menunggu', 'approved' => 'Disetujui', 'overdue' => 'Terlambat', 'declined' => 'Ditolak', 'returned' => 'Dikembalikan'] as $s => $label)
+            <option value="{{ $s }}" @selected(request('status') === $s)>{{ $label }}</option>
+        @endforeach
+    </select>
+    <input type="date" name="from" value="{{ request('from') }}" aria-label="Dari tanggal" class="field px-3 py-2">
+    <input type="date" name="to" value="{{ request('to') }}" aria-label="Sampai tanggal" class="field px-3 py-2">
+    <button class="btn btn-primary px-3 py-2">Filter</button>
 </form>
 
 @if ($loans->isEmpty())
-  @include('partials.empty-state', ['message' => 'No loans match.'])
+    @include('partials.empty-state', ['message' => 'Tidak ada data yang cocok.'])
 @else
-<table class="table table-bordered table-sm bg-white">
-  <thead><tr><th>Student</th><th>Book</th><th>Status</th><th>Requested</th><th>Approved</th><th>Due</th><th>Returned</th></tr></thead>
-  <tbody>
-  @foreach ($loans as $l)
-    <tr class="{{ $l->is_overdue ? 'table-danger' : '' }}">
-      <td>{{ $l->user->nim }} — {{ $l->user->name }}</td><td>{{ $l->book->title }}</td>
-      <td>{{ $l->display_status }}</td>
-      <td>{{ $l->requested_at?->format('d M Y') }}</td><td>{{ $l->approved_at?->format('d M Y') ?? '-' }}</td>
-      <td>{{ $l->due_at?->format('d M Y') ?? '-' }}</td><td>{{ $l->returned_at?->format('d M Y') ?? '-' }}</td>
-    </tr>
-  @endforeach
-  </tbody>
-</table>
-{{ $loans->links() }}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mahasiswa</th>
+                    <th>Buku</th>
+                    <th>Status</th>
+                    <th>Diminta</th>
+                    <th>Disetujui</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Dikembalikan</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($loans as $l)
+                    <tr class="{{ $l->is_overdue ? 'is-overdue' : '' }}">
+                        <td>
+                            <div class="text-fog-100">{{ $l->user->name }}</div>
+                            <div class="text-xs tabular-nums text-fog-400">{{ $l->user->nim }}</div>
+                        </td>
+                        <td class="text-fog-200">{{ $l->book->title }}</td>
+                        <td>@include('partials.status-badge', ['key' => $l->display_status])</td>
+                        <td class="whitespace-nowrap">{{ $l->requested_at?->format('d M Y') }}</td>
+                        <td class="whitespace-nowrap">{{ $l->approved_at?->format('d M Y') ?? '-' }}</td>
+                        <td class="whitespace-nowrap">{{ $l->due_at?->format('d M Y') ?? '-' }}</td>
+                        <td class="whitespace-nowrap">{{ $l->returned_at?->format('d M Y') ?? '-' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-4">{{ $loans->links() }}</div>
 @endif
 @endsection

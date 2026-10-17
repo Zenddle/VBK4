@@ -1,50 +1,96 @@
 @extends('layouts.admin')
-@section('title', 'Users')
+@section('title', 'Pengguna')
 
 @section('body')
-<div class="d-flex justify-content-between mb-3">
-  <form class="d-flex gap-2" method="GET">
-    <input name="q" value="{{ request('q') }}" class="form-control" placeholder="Search name / NIM / username">
-    <button class="btn btn-outline-secondary">Search</button>
-  </form>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUser">+ Add User</button>
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" x-data="{ addOpen: false }">
+    <div>
+        <h1 class="page-title">Pengguna</h1>
+        <p class="page-sub">Kelola akun mahasiswa dan admin</p>
+    </div>
+    <button @click="addOpen = true" class="btn btn-primary">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M12 4v16m8-8H4"/></svg>
+        Tambah Pengguna
+    </button>
+
+    <!-- Add User Modal -->
+    <div x-show="addOpen" x-cloak x-transition.opacity @keydown.escape.window="addOpen = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="modal-backdrop" @click="addOpen = false"></div>
+        <form method="POST" action="{{ route('admin.users.store') }}"
+              class="modal-panel max-h-[90vh] max-w-md overflow-y-auto p-6" role="dialog" aria-modal="true" @click.stop>
+            @csrf
+            <div class="mb-5 flex items-center justify-between">
+                <h3 class="section-title">Tambah Pengguna</h3>
+                <button type="button" @click="addOpen = false" class="rounded p-1 text-2xl leading-none text-fog-400 transition hover:text-fog-100" aria-label="Tutup">&times;</button>
+            </div>
+            @include('admin.user-form', ['user' => null])
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" @click="addOpen = false" class="btn btn-ghost">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
 </div>
 
+<form method="GET" class="mb-6 flex gap-2">
+    <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIM / username..." class="field flex-1">
+    <button class="btn btn-secondary">Cari</button>
+</form>
+
 @if ($users->isEmpty())
-  @include('partials.empty-state', ['message' => 'No users found.'])
+    @include('partials.empty-state', ['message' => 'Tidak ada pengguna ditemukan.'])
 @else
-<table class="table table-bordered bg-white align-middle">
-  <thead><tr><th>NIM / Username</th><th>Name</th><th>Role</th><th></th></tr></thead>
-  <tbody>
-  @foreach ($users as $u)
-    <tr>
-      <td>{{ $u->nim ?? $u->username }}</td><td>{{ $u->name }}</td><td>{{ $u->role }}</td>
-      <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#edit{{ $u->id }}">Edit</button>
-        <form method="POST" action="{{ route('admin.users.destroy', $u) }}" class="d-inline"
-              onsubmit="return confirm('Delete this user?')">@csrf @method('DELETE')
-          <button class="btn btn-sm btn-outline-danger">Delete</button></form>
-      </td>
-    </tr>
-  @endforeach
-  </tbody>
-</table>
-{{ $users->links() }}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>NIM / Username</th>
+                    <th>Nama</th>
+                    <th>Peran</th>
+                    <th class="text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($users as $u)
+                    <tr x-data="{ editOpen: false }">
+                        <td class="font-medium tabular-nums text-fog-100">{{ $u->nim ?? $u->username }}</td>
+                        <td class="text-fog-200">{{ $u->name }}</td>
+                        <td>
+                            <span class="badge {{ $u->role === 'admin' ? 'badge-admin' : 'badge-returned' }}">
+                                {{ $u->role === 'admin' ? 'Admin' : 'Mahasiswa' }}
+                            </span>
+                        </td>
+                        <td class="space-x-1 whitespace-nowrap text-right">
+                            <button @click="editOpen = true" class="btn btn-accent btn-sm">Edit</button>
+                            <form method="POST" action="{{ route('admin.users.destroy', $u) }}" class="inline"
+                                  onsubmit="return confirm('Hapus pengguna ini?')">@csrf @method('DELETE')
+                                <button class="btn btn-danger btn-sm">Hapus</button>
+                            </form>
+
+                            <!-- Edit Modal -->
+                            <div x-show="editOpen" x-cloak x-transition.opacity @keydown.escape.window="editOpen = false"
+                                 class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <div class="modal-backdrop" @click="editOpen = false"></div>
+                                <form method="POST" action="{{ route('admin.users.update', $u) }}"
+                                      class="modal-panel max-h-[90vh] max-w-md overflow-y-auto p-6" role="dialog" aria-modal="true" @click.stop>
+                                    @csrf @method('PUT')
+                                    <div class="mb-5 flex items-center justify-between">
+                                        <h3 class="section-title">Edit Pengguna</h3>
+                                        <button type="button" @click="editOpen = false" class="rounded p-1 text-2xl leading-none text-fog-400 transition hover:text-fog-100" aria-label="Tutup">&times;</button>
+                                    </div>
+                                    @include('admin.user-form', ['user' => $u])
+                                    <div class="mt-6 flex justify-end gap-2">
+                                        <button type="button" @click="editOpen = false" class="btn btn-ghost">Batal</button>
+                                        <button type="submit" class="btn btn-primary">Perbarui</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-4">{{ $users->links() }}</div>
 @endif
-
-{{-- Add modal --}}
-<div class="modal fade" id="addUser" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="POST" action="{{ route('admin.users.store') }}">@csrf
-  <div class="modal-header"><h5 class="modal-title">Add User</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-  <div class="modal-body">@include('admin.user-form', ['user' => null])</div>
-  <div class="modal-footer"><button class="btn btn-primary">Save</button></div>
-</form></div></div>
-
-{{-- Edit modals --}}
-@foreach ($users as $u)
-<div class="modal fade" id="edit{{ $u->id }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="POST" action="{{ route('admin.users.update', $u) }}">@csrf @method('PUT')
-  <div class="modal-header"><h5 class="modal-title">Edit User</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-  <div class="modal-body">@include('admin.user-form', ['user' => $u])</div>
-  <div class="modal-footer"><button class="btn btn-primary">Update</button></div>
-</form></div></div>
-@endforeach
 @endsection
