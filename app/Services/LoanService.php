@@ -1,10 +1,10 @@
 <?php
 namespace App\Services;
 
+use App\Exceptions\LoanException;
 use App\Models\Book;
 use App\Models\Loan;
 use App\Models\User;
-use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class LoanService
@@ -22,15 +22,15 @@ class LoanService
             $active = Loan::where('user_id', $user->id)->active()->get();
 
             if ($active->count() >= self::LIMIT) {
-                throw new DomainException('You already have ' . self::LIMIT . ' active loans.');
+                throw new LoanException('BORROW_LIMIT_EXCEEDED', 'You already have ' . self::LIMIT . ' active loans.');
             }
             if ($active->contains('book_id', $book->id)) {
-                throw new DomainException('You already requested or borrowed this book.');
+                throw new LoanException('ALREADY_REQUESTED', 'You already requested or borrowed this book.');
             }
 
             $fresh = Book::whereKey($book->id)->lockForUpdate()->firstOrFail();
             if ($fresh->available_copies < 1) {
-                throw new DomainException('This book is not available.');
+                throw new LoanException('BOOK_UNAVAILABLE', 'This book is not available.');
             }
 
             return Loan::create([
@@ -48,12 +48,12 @@ class LoanService
         return DB::transaction(function () use ($loan) {
             $loan = Loan::whereKey($loan->id)->lockForUpdate()->firstOrFail();
             if ($loan->status !== 'pending') {
-                throw new DomainException('Only pending requests can be approved.');
+                throw new LoanException('INVALID_LOAN_STATE', 'Only pending requests can be approved.');
             }
 
             $book = Book::whereKey($loan->book_id)->lockForUpdate()->firstOrFail();
             if ($book->available_copies < 1) {
-                throw new DomainException('No copies left to lend.');
+                throw new LoanException('BOOK_UNAVAILABLE', 'No copies left to lend.');
             }
 
             $book->decrement('available_copies');
@@ -69,7 +69,7 @@ class LoanService
     public function decline(Loan $loan, ?string $reason = null): Loan
     {
         if ($loan->status !== 'pending') {
-            throw new DomainException('Only pending requests can be declined.');
+            throw new LoanException('INVALID_LOAN_STATE', 'Only pending requests can be declined.');
         }
         $loan->update(['status' => 'declined', 'decline_reason' => $reason]);
         return $loan;
@@ -80,8 +80,11 @@ class LoanService
     {
         return DB::transaction(function () use ($loan) {
             $loan = Loan::whereKey($loan->id)->lockForUpdate()->firstOrFail();
+            if ($loan->status === 'returned') {
+                throw new LoanException('ALREADY_RETURNED', 'This loan has already been returned.');
+            }
             if ($loan->status !== 'approved') {
-                throw new DomainException('Only approved loans can be returned.');
+                throw new LoanException('INVALID_LOAN_STATE', 'Only approved loans can be returned.');
             }
             Book::whereKey($loan->book_id)->increment('available_copies');
             $loan->update(['status' => 'returned', 'returned_at' => now()]);
